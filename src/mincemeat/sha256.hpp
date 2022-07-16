@@ -2,6 +2,7 @@
 #include <array>
 #include <bit>
 #include <cstdint>
+#include <ranges>
 #include <span>
 #include <string>
 
@@ -13,7 +14,7 @@
 #error Could not find the built-in byteswap function, unrecognized compiler.
 #endif
 
-namespace zh::hash {
+namespace mincemeat {
 
 struct sha256_stream {
 public:
@@ -59,6 +60,17 @@ public:
 			m_buffer[m_buffer_size++] = *current++;
 			remaining_size--;
 		}
+
+		return *this;
+	}
+
+	template<typename T>
+	requires std::ranges::sized_range<T> and std::ranges::contiguous_range<T> sha256_stream& operator<<(const T& data
+	) noexcept {
+		namespace rg = std::ranges;
+
+		(*this) << std::span<const uint8_t>{
+			reinterpret_cast<const uint8_t*>(rg::data(data)), rg::size(data) * sizeof(rg::range_value_t<T>)};
 
 		return *this;
 	}
@@ -354,6 +366,6 @@ public:
 
 impl::sha256_t sha256;
 
-}  // namespace zh::hash
+}  // namespace mincemeat
 
 #undef SHA256_BYTESWAP
